@@ -174,7 +174,7 @@
                         <img id="resultImage" class="image-preview max-w-full h-auto" alt="Generated Brat Image">
                     </div>
                     <div class="mt-2 text-center">
-                        <p class="text-slate-400 text-xs">Format: JPEG | Response: image/jpeg</p>
+                        <p class="text-slate-400 text-xs">Response: image/jpeg</p>
                     </div>
                 </div>
                 
@@ -397,8 +397,6 @@
                 // Render developers
                 renderDevelopers(data.developer);
                 
-                console.log('API data loaded successfully:', data);
-                
             } catch (error) {
                 console.error('Error loading API data:', error);
                 // Fallback data jika gagal load
@@ -480,22 +478,26 @@
                 if (!response.ok) {
                     throw new Error('API request failed');
                 }
+
+                // Check content type
+                const contentType = response.headers.get('content-type');
                 
-                // Get the image blob
-                const imageBlob = await response.blob();
-                
-                // Create object URL for the image
-                const imageUrl = URL.createObjectURL(imageBlob);
-                
-                // Display the image
-                resultImage.src = imageUrl;
-                resultContainer.classList.remove('hidden');
-                
-                // Store the image URL for download
-                resultImage.dataset.imageUrl = imageUrl;
-                resultImage.dataset.filename = `brat-${inputText.replace(/\s+/g, '-')}.jpg`;
-                
-                showNotification('Gambar berhasil di-load dari API!');
+                if (contentType && contentType.startsWith('image/')) {
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    // Display the image
+                    resultImage.src = imageUrl;
+                    resultContainer.classList.remove('hidden');
+                    
+                    // Store the image URL for download
+                    resultImage.dataset.imageUrl = imageUrl;
+                    resultImage.dataset.filename = `brat-${inputText.replace(/\s+/g, '-')}.jpg`;
+                    
+                    showNotification('Gambar berhasil di-load dari API!');
+                } else {
+                    throw new Error('Response is not an image');
+                }
                 
             } catch (error) {
                 console.error('Error fetching image:', error);
