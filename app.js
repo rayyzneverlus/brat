@@ -33,6 +33,67 @@ app.get("/test", (req, res) => {
   res.sendFile(path.join(__dirname, "html", "home.html"));
 });
 
+app.get('/api', async (req, res) => {
+  const text = req.query.text
+  const background = req.query.background
+  const color = req.query.color
+  const hit = fetchCount()
+  if (!text) return res.status(200).json({
+    status: false,
+    message: "text is required!"
+  });
+  if (!browser) {
+    await launchBrowser();
+  }
+  const context = await browser.newContext({
+    viewport: {
+      width: 1536,
+      height: 695
+    }
+  });
+  const page = await context.newPage();
+
+  const filePath = path.join(__dirname, './site/index.html');
+
+  // Open https://www.bratgenerator.com/
+  await page.goto(`file://${filePath}`);
+
+  // Click on <div> #toggleButtonWhite
+  await page.click('#toggleButtonWhite');
+
+  // Click on <div> #textOverlay
+  await page.click('#textOverlay');
+
+  // Click on <input> #textInput
+  await page.click('#textInput');
+
+  // Fill "sas" on <input> #textInput
+  await page.fill('#textInput', text);
+
+  await page.evaluate((data) => {
+    if (data.background) {
+      $('.node__content.clearfix').css('background-color', data.background);
+    }
+    if (data.color) {
+      $('.textFitted').css('color', data.color);
+    }
+  }, { background, color });
+
+  const element = await page.$('#textOverlay');
+  const box = await element.boundingBox();
+
+  res.set('Content-Type', 'image/png');
+  res.end(await page.screenshot({
+    clip: {
+      x: box.x,
+      y: box.y,
+      width: 500,
+      height: 500
+    }
+  }));
+  await context.close();
+});
+
 app.use('*', async (req, res) => {
   const text = req.query.text
   const background = req.query.background
